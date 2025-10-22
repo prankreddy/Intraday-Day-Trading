@@ -1,0 +1,5 @@
+{
+  "name": "Intraday Trading Smart Assistant",
+  "description": "A highly responsive, production-grade web app for Indian traders to manage trades, get business decision insights, optimize costs, and receive risk-aware suggestions powered by Gemini.",
+  "requestFramePermissions": []
+}
