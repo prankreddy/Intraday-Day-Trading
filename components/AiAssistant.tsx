@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/Card';
 import { Button } from './ui/Button';
@@ -20,7 +21,7 @@ const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
 };
 
 
-export const AiAssistant: React.FC<AiAssistantProps> = ({ tradeInput }) => {
+const AiAssistant: React.FC<AiAssistantProps> = ({ tradeInput }) => {
     const [insights, setInsights] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -75,3 +76,5 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ tradeInput }) => {
         </Card>
     );
 };
+
+export default AiAssistant;

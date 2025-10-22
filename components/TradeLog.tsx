@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import type { Trade } from '../types';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/Card';
@@ -5,6 +6,7 @@ import { Button } from './ui/Button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Share } from './icons';
 
 
 interface TradeLogProps {
@@ -14,7 +16,7 @@ interface TradeLogProps {
 
 const formatCurrency = (value: number) => `₹${value.toFixed(2)}`;
 
-export const TradeLog: React.FC<TradeLogProps> = ({ log, clearLog }) => {
+const TradeLog: React.FC<TradeLogProps> = ({ log, clearLog }) => {
 
     const cumulativePnl = useMemo(() => {
         let total = 0;
@@ -102,14 +104,54 @@ export const TradeLog: React.FC<TradeLogProps> = ({ log, clearLog }) => {
         doc.save("trade_log.pdf");
     };
 
+    const handleShareSummary = () => {
+        if (log.length === 0) return;
+
+        const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        const header = `*📈 Intraday Trading Summary - ${today} 📉*\n---------------------------------`;
+
+        const tradesList = log.map((trade, index) => {
+            const pnlEmoji = trade.netPnl >= 0 ? '📈' : '📉';
+            return `*${index + 1}. ${trade.stock.toUpperCase()} (${trade.tradeType})*\n` +
+                   `Qty: ${trade.quantity} | Entry: ${formatCurrency(trade.entryPrice)} | Exit: ${formatCurrency(trade.finalMarketPrice)}\n` +
+                   `Net P/L: *${formatCurrency(trade.netPnl)}* ${pnlEmoji}`;
+        }).join('\n\n');
+
+        const totalNetPnl = log.reduce((acc, trade) => acc + trade.netPnl, 0);
+        const totalCharges = log.reduce((acc, trade) => acc + trade.totalCharges, 0);
+
+        const footer = `---------------------------------\n` +
+                       `*Overall Summary:*\n` +
+                       `Total Trades: ${log.length}\n` +
+                       `Total Charges: ${formatCurrency(totalCharges)}\n` +
+                       `*Final Net P/L: ${formatCurrency(totalNetPnl)}*`;
+
+        const summaryText = `${header}\n\n${tradesList}\n\n${footer}`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: `Intraday Trading Summary - ${today}`,
+                text: summaryText,
+            }).catch(console.error);
+        } else {
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(summaryText)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+    };
+
+
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Trade History</CardTitle>
                 <div className="flex flex-wrap gap-2">
-                    <Button onClick={exportToPDF} variant="outline" disabled={log.length === 0}>Export PDF</Button>
-                    <Button onClick={exportToCSV} variant="outline" disabled={log.length === 0}>Export CSV</Button>
-                    <Button onClick={clearLog} variant="destructive" disabled={log.length === 0}>Clear Log</Button>
+                    <Button onClick={handleShareSummary} variant="secondary" size="sm" disabled={log.length === 0} className="flex items-center gap-1.5">
+                        <Share className="w-4 h-4" /> Share
+                    </Button>
+                    <Button onClick={exportToPDF} variant="outline" size="sm" disabled={log.length === 0}>Export PDF</Button>
+                    <Button onClick={exportToCSV} variant="outline" size="sm" disabled={log.length === 0}>Export CSV</Button>
+                    <Button onClick={clearLog} variant="destructive" size="sm" disabled={log.length === 0}>Clear Log</Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -168,3 +210,5 @@ export const TradeLog: React.FC<TradeLogProps> = ({ log, clearLog }) => {
         </Card>
     );
 };
+
+export default TradeLog;
