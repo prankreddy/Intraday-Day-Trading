@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/Card'
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Info, Target, ShieldAlert } from './icons';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface DashboardPanelProps {
     tradeInput: TradeInput | null;
@@ -32,6 +33,36 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
         }
         return null;
     }, [calculatedTrade, currentMarketPrice]);
+
+    const chartData = useMemo(() => {
+        if (!calculatedTrade) return [];
+        
+        const data = [];
+        const { stopLoss, targetPrice, calculatePnl } = calculatedTrade;
+        const range = targetPrice - stopLoss;
+        if (range <= 0) return [];
+
+        const steps = 50; // Generate 50 data points for a smooth curve
+        const step = range / steps;
+
+        for (let i = 0; i <= steps; i++) {
+            const price = stopLoss + i * step;
+            const pnl = calculatePnl(price).netPnl;
+            data.push({ price: parseFloat(price.toFixed(2)), pnl: parseFloat(pnl.toFixed(2)) });
+        }
+        return data;
+    }, [calculatedTrade]);
+    
+    const gradientOffset = useMemo(() => {
+        if (!chartData || chartData.length === 0) return 0.5;
+        const dataMax = Math.max(...chartData.map(i => i.pnl));
+        const dataMin = Math.min(...chartData.map(i => i.pnl));
+        if (dataMax <= 0) return 0; // all red
+        if (dataMin >= 0) return 1; // all green
+
+        return dataMax / (dataMax - dataMin);
+    }, [chartData]);
+
 
     if (!tradeInput || !calculatedTrade || !pnlResult) {
         return (
@@ -107,6 +138,49 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
                             />
                         </div>
                     </div>
+                </div>
+
+                <div className="h-48 md:h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                            <defs>
+                                <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset={gradientOffset} stopColor="#22c55e" stopOpacity={0.8}/>
+                                    <stop offset={gradientOffset} stopColor="#ef4444" stopOpacity={0.8}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.2)" />
+                            <XAxis 
+                                dataKey="price" 
+                                tickFormatter={(value) => formatCurrency(value)}
+                                domain={['dataMin', 'dataMax']}
+                                type="number"
+                                stroke="currentColor"
+                                fontSize={12}
+                            />
+                            <YAxis 
+                                tickFormatter={(value) => `₹${value}`} 
+                                domain={['auto', 'auto']}
+                                stroke="currentColor"
+                                fontSize={12}
+                                width={70}
+                            />
+                            <Tooltip 
+                                contentStyle={{
+                                    backgroundColor: 'rgba(30, 30, 30, 0.8)',
+                                    borderColor: '#4a4a4a',
+                                    color: '#fff'
+                                }}
+                                labelFormatter={(label) => `Price: ${formatCurrency(label)}`}
+                                formatter={(value: number) => [formatCurrency(value), 'Net P/L']}
+                            />
+                            <Area type="monotone" dataKey="pnl" stroke="#8884d8" fillOpacity={1} fill="url(#colorPnl)" />
+                            <ReferenceLine y={0} stroke="#a0a0a0" strokeDasharray="4 4" />
+                            {currentMarketPrice !== null && (
+                                <ReferenceLine x={currentMarketPrice} stroke="#3b82f6" strokeWidth={2} label={{ value: 'Current', fill: '#3b82f6', position: 'insideTop' }} />
+                            )}
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

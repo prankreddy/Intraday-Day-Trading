@@ -111,23 +111,33 @@ const TradeLog: React.FC<TradeLogProps> = ({ log, clearLog }) => {
 
         const header = `*📈 Intraday Trading Summary - ${today} 📉*\n---------------------------------`;
 
-        const tradesList = log.map((trade, index) => {
-            const pnlEmoji = trade.netPnl >= 0 ? '📈' : '📉';
-            return `*${index + 1}. ${trade.stock.toUpperCase()} (${trade.tradeType})*\n` +
-                   `Qty: ${trade.quantity} | Entry: ${formatCurrency(trade.entryPrice)} | Exit: ${formatCurrency(trade.finalMarketPrice)}\n` +
-                   `Net P/L: *${formatCurrency(trade.netPnl)}* ${pnlEmoji}`;
-        }).join('\n\n');
+        const tradesList = log.map((t, index) => {
+            const pnlEmoji = t.netPnl >= 0 ? '📈' : '📉';
+            return `*${index + 1}. ${t.stock.toUpperCase()} (${t.tradeType})*\n` +
+                   `Entry: ${formatCurrency(t.entryPrice)} | Exit: ${formatCurrency(t.finalMarketPrice)} | Qty: ${t.quantity}\n` +
+                   `Capital Used: ${formatCurrency(t.capitalUsed)}\n` +
+                   `Gross P/L: ${formatCurrency(t.grossPnl)}\n` +
+                   `Net P/L: *${formatCurrency(t.netPnl)}* ${pnlEmoji}\n\n` +
+                   `_Charges Breakdown:_\n` +
+                   `*Total: ${formatCurrency(t.totalCharges)}*\n` +
+                   `• Brokerage: ${formatCurrency(t.charges.brokerage)}\n` +
+                   `• STT: ${formatCurrency(t.charges.stt)}\n` +
+                   `• GST: ${formatCurrency(t.charges.gst)}\n` +
+                   `• Stamp Duty: ${formatCurrency(t.charges.stampDuty)}\n` +
+                   `• Exchange: ${formatCurrency(t.charges.exchange)}\n\n` +
+                   `_Strategy Used:_\n` +
+                   `SL: ${t.stopLossPercentage ?? 'Default'}% | TP: ${t.targetPricePercentage ?? 'Default'}%`;
+        }).join('\n\n---------------------------------\n\n');
 
         const totalNetPnl = log.reduce((acc, trade) => acc + trade.netPnl, 0);
         const totalCharges = log.reduce((acc, trade) => acc + trade.totalCharges, 0);
 
-        const footer = `---------------------------------\n` +
-                       `*Overall Summary:*\n` +
+        const footer = `*Overall Summary:*\n` +
                        `Total Trades: ${log.length}\n` +
-                       `Total Charges: ${formatCurrency(totalCharges)}\n` +
+                       `Total Charges Paid: ${formatCurrency(totalCharges)}\n` +
                        `*Final Net P/L: ${formatCurrency(totalNetPnl)}*`;
 
-        const summaryText = `${header}\n\n${tradesList}\n\n${footer}`;
+        const summaryText = `${header}\n\n${tradesList}\n\n---------------------------------\n${footer}`;
 
         if (navigator.share) {
             navigator.share({

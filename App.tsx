@@ -8,7 +8,6 @@ import { useTheme } from './hooks/useTheme';
 import { Sun, Moon } from './components/icons';
 import { ToastProvider, useToast } from './components/ui/Toast';
 
-const AiAssistant = lazy(() => import('./components/AiAssistant'));
 const TradeLog = lazy(() => import('./components/TradeLog'));
 
 const LoadingFallback: React.FC = () => (
@@ -61,9 +60,6 @@ const AppContent: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1 flex flex-col gap-6">
                         <TradeInputPanel onSimulate={handleSimulationStart} />
-                        <Suspense fallback={<LoadingFallback />}>
-                            <AiAssistant tradeInput={tradeInput} />
-                        </Suspense>
                     </div>
                     <div className="lg:col-span-2 flex flex-col gap-6">
                        <DashboardPanel 
