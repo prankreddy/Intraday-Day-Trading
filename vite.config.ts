@@ -10,9 +10,6 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
-      build: {
-        outDir: 'dist', // Build output will go here
-      },
       define: {
       },
       resolve: {
