@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       build: {
-        outDir: 'docs', // Build output will go here
+        outDir: 'dist', // Build output will go here
       },
       define: {
       },
