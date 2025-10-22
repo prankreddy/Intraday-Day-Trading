@@ -1,13 +1,18 @@
 export type TradeType = 'BUY' | 'SHORT';
 export type TradeDirection = 'UP' | 'DOWN';
 
+export interface ChargeConfig {
+  value: number;
+  isPercentage: boolean;
+}
+
 export interface ChargesInput {
-  brokerageBuy: number;
-  brokerageSell: number;
-  sttPercentage: number;
-  gstPercentage: number;
-  stampDutyPercentage: number;
-  exchangeChargePercentage: number;
+  brokerageBuy: ChargeConfig;
+  brokerageSell: ChargeConfig;
+  stt: ChargeConfig;
+  gst: ChargeConfig;
+  stampDuty: ChargeConfig;
+  exchangeCharge: ChargeConfig;
 }
 
 export interface TradeInput {

@@ -32,13 +32,20 @@ export const useTradeCalculator = (tradeInput: TradeInput | null, chargesInput: 
             const buyTurnover = positionValue;
             const sellTurnover = quantity * currentPrice;
             
-            const brokerage = chargesInput.brokerageBuy + chargesInput.brokerageSell;
-            const stt = (sellTurnover * chargesInput.sttPercentage) / 100;
-            const stampDuty = (buyTurnover * chargesInput.stampDutyPercentage) / 100;
-            const exchange = ((buyTurnover + sellTurnover) * chargesInput.exchangeChargePercentage) / 100;
-            const taxableCharges = brokerage + exchange;
-            const gst = (taxableCharges * chargesInput.gstPercentage) / 100;
-            const totalCharges = brokerage + stt + gst + stampDuty + exchange;
+            const { brokerageBuy, brokerageSell, stt, stampDuty, exchangeCharge, gst } = chargesInput;
+            
+            const buyBrokerage = brokerageBuy.isPercentage ? (buyTurnover * brokerageBuy.value) / 100 : brokerageBuy.value;
+            const sellBrokerage = brokerageSell.isPercentage ? (sellTurnover * brokerageSell.value) / 100 : brokerageSell.value;
+            const brokerage = buyBrokerage + sellBrokerage;
+
+            const sttAmount = stt.isPercentage ? (sellTurnover * stt.value) / 100 : stt.value;
+            const stampDutyAmount = stampDuty.isPercentage ? (buyTurnover * stampDuty.value) / 100 : stampDuty.value;
+            const exchangeAmount = exchangeCharge.isPercentage ? ((buyTurnover + sellTurnover) * exchangeCharge.value) / 100 : exchangeCharge.value;
+            
+            const taxableCharges = brokerage + exchangeAmount;
+            const gstAmount = gst.isPercentage ? (taxableCharges * gst.value) / 100 : gst.value;
+            
+            const totalCharges = brokerage + sttAmount + gstAmount + stampDutyAmount + exchangeAmount;
             const netPnl = grossPnl - totalCharges;
             
             const pnlPercentage = capitalUsed > 0 ? (netPnl / capitalUsed) * 100 : 0;
@@ -48,7 +55,13 @@ export const useTradeCalculator = (tradeInput: TradeInput | null, chargesInput: 
                 netPnl,
                 totalCharges,
                 pnlPercentage,
-                charges: { brokerage, stt, gst, stampDuty, exchange }
+                charges: { 
+                    brokerage, 
+                    stt: sttAmount, 
+                    gst: gstAmount, 
+                    stampDuty: stampDutyAmount, 
+                    exchange: exchangeAmount,
+                }
             };
         };
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import type { TradeInput, ChargesInput } from '../types';
+import type { TradeInput, ChargesInput, ChargeConfig } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -9,13 +9,45 @@ interface TradeInputPanelProps {
     onSimulate: (data: { tradeDetails: Omit<TradeInput, 'expectedDirection'>, charges: ChargesInput }) => void;
 }
 
-const ChargeInput: React.FC<{label: string, id: keyof ChargesInput, value: number, onChange: (id: keyof ChargesInput, value: string) => void, isPercentage?: boolean}> = 
-({ label, id, value, onChange, isPercentage = false}) => (
-    <div>
-        <label htmlFor={id} className="block text-xs font-medium text-gray-700 dark:text-gray-300">{label} {isPercentage && '(%)'}</label>
-        <Input id={id} type="number" value={value} onChange={(e) => onChange(id, e.target.value)} required step="0.00001" />
-    </div>
-);
+const ChargeInput: React.FC<{
+    label: string;
+    id: keyof ChargesInput;
+    config: ChargeConfig;
+    onChange: (id: keyof ChargesInput, newConfig: ChargeConfig) => void;
+}> = ({ label, id, config, onChange }) => {
+    const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(id, { ...config, value: parseFloat(e.target.value) || 0 });
+    };
+
+    const toggleMode = () => {
+        onChange(id, { ...config, isPercentage: !config.isPercentage });
+    };
+
+    return (
+        <div>
+            <label htmlFor={id} className="block text-xs font-medium text-gray-700 dark:text-gray-300">{label}</label>
+            <div className="flex items-center mt-1">
+                <Input 
+                    id={id} 
+                    type="number" 
+                    value={config.value} 
+                    onChange={handleValueChange} 
+                    required 
+                    step={config.isPercentage ? "0.0001" : "0.01"}
+                    className="mt-0 rounded-r-none focus:z-10 relative"
+                />
+                <button
+                    type="button"
+                    onClick={toggleMode}
+                    className="relative -ml-px inline-flex items-center px-3 py-2 text-sm font-semibold border rounded-r-md transition-colors bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:z-10"
+                    title={config.isPercentage ? "Switch to fixed amount (₹)" : "Switch to percentage (%)"}
+                >
+                    <span className="font-sans">{config.isPercentage ? '%' : '₹'}</span>
+                </button>
+            </div>
+        </div>
+    );
+};
 
 
 export const TradeInputPanel: React.FC<TradeInputPanelProps> = ({ onSimulate }) => {
@@ -27,16 +59,16 @@ export const TradeInputPanel: React.FC<TradeInputPanelProps> = ({ onSimulate }) 
     const [targetPricePercentage, setTargetPricePercentage] = useState('10');
 
     const [charges, setCharges] = useState<ChargesInput>({
-        brokerageBuy: 20,
-        brokerageSell: 20,
-        sttPercentage: 0.025,
-        exchangeChargePercentage: 0.00345,
-        gstPercentage: 18,
-        stampDutyPercentage: 0.003,
+        brokerageBuy: { value: 20, isPercentage: false },
+        brokerageSell: { value: 20, isPercentage: false },
+        stt: { value: 0.025, isPercentage: true },
+        exchangeCharge: { value: 0.00345, isPercentage: true },
+        gst: { value: 18, isPercentage: true },
+        stampDuty: { value: 0.003, isPercentage: true },
     });
     
-    const handleChargesChange = (id: keyof ChargesInput, value: string) => {
-        setCharges(prev => ({ ...prev, [id]: parseFloat(value) || 0 }));
+    const handleChargesChange = (id: keyof ChargesInput, newConfig: ChargeConfig) => {
+        setCharges(prev => ({ ...prev, [id]: newConfig }));
     };
 
     const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -106,15 +138,20 @@ export const TradeInputPanel: React.FC<TradeInputPanelProps> = ({ onSimulate }) 
                         </div>
                     </div>
 
-                    <details className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 text-sm">
-                        <summary className="font-medium cursor-pointer">Charge Configuration</summary>
-                        <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-                           <ChargeInput label="Brokerage (Buy)" id="brokerageBuy" value={charges.brokerageBuy} onChange={handleChargesChange} />
-                           <ChargeInput label="Brokerage (Sell)" id="brokerageSell" value={charges.brokerageSell} onChange={handleChargesChange} />
-                           <ChargeInput label="STT" id="sttPercentage" value={charges.sttPercentage} onChange={handleChargesChange} isPercentage />
-                           <ChargeInput label="Stamp Duty" id="stampDutyPercentage" value={charges.stampDutyPercentage} onChange={handleChargesChange} isPercentage />
-                           <ChargeInput label="Exchange" id="exchangeChargePercentage" value={charges.exchangeChargePercentage} onChange={handleChargesChange} isPercentage />
-                           <ChargeInput label="GST" id="gstPercentage" value={charges.gstPercentage} onChange={handleChargesChange} isPercentage />
+                    <details className="border border-gray-200 dark:border-gray-700 rounded-lg group text-sm">
+                        <summary className="flex items-center justify-between w-full p-3 font-medium cursor-pointer list-none">
+                            <span>Charge Configuration</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 transition-transform duration-200 transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </summary>
+                        <div className="grid grid-cols-2 gap-4 p-3 border-t border-gray-200 dark:border-gray-700">
+                           <ChargeInput label="Brokerage (Buy)" id="brokerageBuy" config={charges.brokerageBuy} onChange={handleChargesChange} />
+                           <ChargeInput label="Brokerage (Sell)" id="brokerageSell" config={charges.brokerageSell} onChange={handleChargesChange} />
+                           <ChargeInput label="STT" id="stt" config={charges.stt} onChange={handleChargesChange} />
+                           <ChargeInput label="Stamp Duty" id="stampDuty" config={charges.stampDuty} onChange={handleChargesChange} />
+                           <ChargeInput label="Exchange" id="exchangeCharge" config={charges.exchangeCharge} onChange={handleChargesChange} />
+                           <ChargeInput label="GST" id="gst" config={charges.gst} onChange={handleChargesChange} />
                         </div>
                     </details>
 
